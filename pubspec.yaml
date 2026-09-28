@@ -45,6 +45,8 @@ dependencies:
   flutter_animate: ^4.5.0
   path_provider: ^2.1.5
   url_launcher: ^6.3.1
+  dart_des: ^1.0.2
+  audio_service: ^0.18.17
 
 dev_dependencies:
   flutter_test:

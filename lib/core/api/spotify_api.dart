@@ -6,6 +6,7 @@ import '../../models/album_model.dart';
 import '../../models/artist_model.dart';
 import '../../models/track_model.dart';
 import '../constants/api_constants.dart';
+import 'saavn_api.dart';
 import 'itunes_api.dart';
 import 'epidemic_sound_api.dart';
 import 'jamendo_api.dart';
@@ -68,6 +69,10 @@ class SpotifyApi {
     int offset = 0,
     LanguageOption? language,
   }) async {
+    // 1. Prioritize Saavn Full-Length HD Songs
+    final saavnTracks = await SaavnApi().getTrendingTracks(limit: limit, offset: offset, language: language);
+    if (saavnTracks.isNotEmpty) return saavnTracks;
+
     try {
       final effectiveLimit = limit.clamp(1, 50);
       final uri = Uri.parse('${ApiConstants.spotifyBaseUrl}/me/top/tracks?time_range=long_term&limit=$effectiveLimit&offset=$offset');
@@ -100,12 +105,16 @@ class SpotifyApi {
     return await JamendoApi().getTrendingTracks(limit: limit, offset: offset, language: language);
   }
 
-  /// Get Trending / Viral Charts from Spotify (Supports unlimited tracks)
+  /// Get Trending / Viral Charts (Full-length tracks)
   Future<List<TrackModel>> getTrendingTracks({
     int limit = 100,
     int offset = 0,
     LanguageOption? language,
   }) async {
+    // 1. Saavn full tracks
+    final saavnTracks = await SaavnApi().getTrendingTracks(limit: limit, offset: offset, language: language);
+    if (saavnTracks.isNotEmpty) return saavnTracks;
+
     final query = (language != null && language.searchTag != null && language.searchTag!.isNotEmpty)
         ? '${language.searchTag} top hits'
         : 'top hits trending';
@@ -120,14 +129,26 @@ class SpotifyApi {
     return await JamendoApi().getTrendingTracks(limit: limit, offset: offset, language: language);
   }
 
-  /// Search Tracks with High Precision (Spotify -> iTunes Global Engine -> Jamendo -> Epidemic)
+  /// Search Tracks with High Precision (Saavn Full Tracks -> iTunes -> Spotify -> Jamendo -> Epidemic)
   Future<List<TrackModel>> searchTracks({
     required String query,
     int limit = 100,
     int offset = 0,
     LanguageOption? language,
   }) async {
-    // 1. High-precision global search engine (matches exact tracks like "MARCO", "Aavesham", artists, movies)
+    // 1. Saavn full-length 320kbps engine (Matches exact tracks, Indian & Global hits, full duration audio)
+    final saavnTracks = await SaavnApi().searchTracks(
+      query: query,
+      limit: limit,
+      offset: offset,
+      language: language,
+    );
+
+    if (saavnTracks.isNotEmpty) {
+      return saavnTracks;
+    }
+
+    // 2. High-precision global search engine fallback
     final itunesTracks = await ITunesApi().searchTracks(
       query: query,
       limit: limit,
@@ -255,6 +276,9 @@ class SpotifyApi {
       debugPrint('❌ [SpotifyApi] getFeaturedAlbums error: $e');
     }
 
+    final saavnAlbums = await SaavnApi().getFeaturedAlbums(limit: limit);
+    if (saavnAlbums.isNotEmpty) return saavnAlbums;
+
     return await JamendoApi().getFeaturedAlbums(limit: limit);
   }
 
@@ -283,6 +307,9 @@ class SpotifyApi {
     } catch (e) {
       debugPrint('❌ [SpotifyApi] getPopularArtists error: $e');
     }
+
+    final saavnArtists = await SaavnApi().getPopularArtists(limit: limit);
+    if (saavnArtists.isNotEmpty) return saavnArtists;
 
     return await JamendoApi().getPopularArtists(limit: limit);
   }

@@ -96,9 +96,16 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            backgroundColor: AppColors.surfaceElevated,
-                            content: Text('Audio stream quality set to ${format.displayName}'),
+                            backgroundColor: const Color(0xFF1E2330),
+                            content: Text(
+                              'Audio stream quality set to ${format.displayName}',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
                             behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Colors.white12, width: 1),
+                            ),
                             duration: const Duration(seconds: 2),
                           ),
                         );
@@ -167,7 +174,6 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
                         icon: const Icon(
@@ -177,27 +183,47 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      Column(
-                        children: [
-                          Text(
-                            track.isLocal ? 'PLAYING FROM LOCAL STORAGE' : 'PLAYING FROM JAMENDO',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.5,
-                              color: AppColors.primaryLight.withOpacity(0.8),
-                            ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                track.isLocal
+                                    ? 'PLAYING FROM LOCAL STORAGE'
+                                    : track.isSaavn
+                                        ? 'PLAYING FROM JIOSAAVN HD'
+                                        : track.isEpidemic
+                                            ? 'PLAYING FROM EPIDEMIC SOUND'
+                                            : track.isSoundCloud
+                                                ? 'PLAYING FROM SOUNDCLOUD'
+                                                : 'PLAYING FROM STREAM',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.5,
+                                  color: AppColors.primaryLight.withOpacity(0.9),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                track.albumName.isNotEmpty ? track.albumName : track.name,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            track.albumName.isNotEmpty ? track.albumName : 'Single Track',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       IconButton(
                         icon: Icon(
@@ -245,7 +271,7 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
                               const Icon(Icons.high_quality_rounded, size: 16, color: AppColors.secondary),
                               const SizedBox(width: 4),
                               Text(
-                                JamendoApi().selectedFormat.displayName.split(' ').first.toUpperCase(),
+                                track.isSaavn ? '320 KBPS HD' : JamendoApi().selectedFormat.displayName.split(' ').first.toUpperCase(),
                                 style: const TextStyle(
                                    fontSize: 11,
                                    fontWeight: FontWeight.w700,
@@ -268,10 +294,16 @@ class _FullPlayerScreenState extends State<FullPlayerScreen> {
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  backgroundColor: AppColors.surfaceElevated,
-                                  content: Text('Sharing "${track.name}" by ${track.artistName}'),
+                                  backgroundColor: const Color(0xFF1E2330),
+                                  content: Text(
+                                    'Sharing "${track.name}" by ${track.artistName}',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
                                   behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: const BorderSide(color: Colors.white12, width: 1),
+                                  ),
                                 ),
                               );
                             },

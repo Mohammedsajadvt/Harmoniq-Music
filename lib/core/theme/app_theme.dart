@@ -78,6 +78,21 @@ class AppTheme {
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         trackHeight: 3.5,
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF181C26),
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        actionTextColor: AppColors.secondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.white12, width: 1),
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 8,
+      ),
       iconTheme: const IconThemeData(
         color: AppColors.textPrimary,
       ),

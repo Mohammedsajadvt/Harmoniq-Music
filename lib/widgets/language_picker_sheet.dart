@@ -242,9 +242,16 @@ class _LanguagePickerSheetState extends State<LanguagePickerSheet> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                backgroundColor: AppColors.surfaceElevated,
-                                content: Text('🌐 Filtered music for: ${item.name} (${item.flag})'),
+                                backgroundColor: const Color(0xFF1E2330),
+                                content: Text(
+                                  '🌐 Filtered music for: ${item.name} (${item.flag})',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                ),
                                 behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(color: Colors.white12, width: 1),
+                                ),
                                 duration: const Duration(seconds: 2),
                               ),
                             );

@@ -6,7 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../core/api/epidemic_sound_api.dart';
 import '../core/api/jamendo_api.dart';
+import '../core/api/saavn_api.dart';
 import '../core/api/soundcloud_api.dart';
+import '../core/services/audio_handler.dart';
 import '../models/track_model.dart';
 
 enum RepeatMode { off, all, one }
@@ -43,22 +45,50 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   void _initAudioPlayer() {
+    // Configure background audio session for lockscreen and background playback
+    _player.setAudioContext(AudioContext(
+      android: const AudioContextAndroid(
+        isSpeakerphoneOn: true,
+        stayAwake: true,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.media,
+        audioFocus: AndroidAudioFocus.gain,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: const {
+          AVAudioSessionOptions.defaultToSpeaker,
+        },
+      ),
+    ));
+
+    // Connect Spotify-style notification & lockscreen controls
+    final handler = HarmoniqAudioHandler.instance;
+    handler.onPlayCallback = () => resume();
+    handler.onPauseCallback = () => pause();
+    handler.onSkipToNextCallback = () => next();
+    handler.onSkipToPreviousCallback = () => previous();
+    handler.onSeekCallback = (pos) => seek(pos);
+
     // Player State stream
     _player.onPlayerStateChanged.listen((state) {
       _playerState = state;
       _isBuffering = false;
+      _syncAudioHandler();
       notifyListeners();
     });
 
     // Position stream
     _player.onPositionChanged.listen((pos) {
       _position = pos;
+      _syncAudioHandler();
       notifyListeners();
     });
 
     // Duration stream
     _player.onDurationChanged.listen((dur) {
       _duration = dur;
+      _syncAudioHandler();
       notifyListeners();
     });
 
@@ -66,6 +96,17 @@ class AudioPlayerProvider extends ChangeNotifier {
     _player.onPlayerComplete.listen((_) {
       _handleTrackCompletion();
     });
+  }
+
+  void _syncAudioHandler() {
+    if (_currentTrack != null) {
+      HarmoniqAudioHandler.instance.updatePlaybackState(
+        isPlaying: isPlaying,
+        position: _position,
+        duration: _duration,
+        isBuffering: _isBuffering,
+      );
+    }
   }
 
   void _handleTrackCompletion() {
@@ -77,7 +118,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
   }
 
-  /// Resolve or prepare audio source (handles Spotify previews, SoundCloud progressive media, Windows Media Foundation URL redirects & local offline files)
+  /// Resolve or prepare audio source (handles full-length JioSaavn streams, Spotify/iTunes full-track resolution, SoundCloud & local files)
   Future<Source?> _resolveSource(TrackModel track) async {
     // 1. Direct local file (downloaded track)
     if (track.isLocal && track.localFilePath != null) {
@@ -90,27 +131,41 @@ class AudioPlayerProvider extends ChangeNotifier {
 
     String activeStreamUrl = track.audioUrl;
 
-    // Resolve dynamic streaming URL for Epidemic Sound & SoundCloud tracks
-    if (track.isEpidemic) {
+    // If it's a 30s preview URL from iTunes (mzstatic) or Spotify (scdn.co) or empty, resolve full track with JioSaavn
+    final isPreviewUrl = activeStreamUrl.contains('mzstatic.com') ||
+        activeStreamUrl.contains('audio-ak-spotify-com') ||
+        activeStreamUrl.contains('p.scdn.co');
+
+    if (track.isSaavn) {
+      if (activeStreamUrl.isEmpty) {
+        activeStreamUrl = await SaavnApi().resolveStreamUrl(track);
+      }
+    } else if (track.isEpidemic) {
       activeStreamUrl = await EpidemicSoundApi().getTrackAudioUrl(track.id);
     } else if (track.isSoundCloud) {
       activeStreamUrl = await SoundCloudApi().resolveStreamUrl(track);
-    } else if (track.isSpotify && activeStreamUrl.isEmpty) {
-      // Find matching live audio stream from Epidemic Sound or Jamendo
-      try {
-        final epMatches = await EpidemicSoundApi().searchTracks(query: '${track.name} ${track.artistName}', limit: 1);
-        if (epMatches.isNotEmpty) {
-          activeStreamUrl = await EpidemicSoundApi().getTrackAudioUrl(epMatches.first.id);
-        }
-      } catch (_) {}
-
-      if (activeStreamUrl.isEmpty) {
+    } else if (track.isSpotify || isPreviewUrl || activeStreamUrl.isEmpty) {
+      // Find full-length 320kbps audio stream from JioSaavn first
+      final fullUrl = await SaavnApi().resolveStreamUrl(track);
+      if (fullUrl.isNotEmpty) {
+        activeStreamUrl = fullUrl;
+      } else {
+        // Fallback to Epidemic Sound or Jamendo
         try {
-          final matches = await JamendoApi().searchTracks(query: '${track.name} ${track.artistName}', limit: 1);
-          if (matches.isNotEmpty && matches.first.audioUrl.isNotEmpty) {
-            activeStreamUrl = matches.first.audioUrl;
+          final epMatches = await EpidemicSoundApi().searchTracks(query: '${track.name} ${track.artistName}', limit: 1);
+          if (epMatches.isNotEmpty) {
+            activeStreamUrl = await EpidemicSoundApi().getTrackAudioUrl(epMatches.first.id);
           }
         } catch (_) {}
+
+        if (activeStreamUrl.isEmpty || isPreviewUrl) {
+          try {
+            final matches = await JamendoApi().searchTracks(query: '${track.name} ${track.artistName}', limit: 1);
+            if (matches.isNotEmpty && matches.first.audioUrl.isNotEmpty) {
+              activeStreamUrl = matches.first.audioUrl;
+            }
+          } catch (_) {}
+        }
       }
     }
 
@@ -164,6 +219,21 @@ class AudioPlayerProvider extends ChangeNotifier {
     _duration = Duration(seconds: track.duration);
     _isBuffering = true;
     notifyListeners();
+
+    HarmoniqAudioHandler.instance.setTrackMetadata(
+      id: track.id,
+      title: track.name,
+      artist: track.artistName,
+      album: track.albumName,
+      duration: Duration(seconds: track.duration),
+      artUri: track.albumImage,
+    );
+    HarmoniqAudioHandler.instance.updatePlaybackState(
+      isPlaying: true,
+      position: Duration.zero,
+      duration: Duration(seconds: track.duration),
+      isBuffering: true,
+    );
 
     try {
       await _player.stop();

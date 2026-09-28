@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'core/services/audio_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/audio_player_provider.dart';
 import 'providers/favorites_provider.dart';
@@ -10,6 +11,9 @@ import 'screens/landing/landing_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize background audio handler for system notifications and lockscreen
+  await HarmoniqAudioHandler.init();
 
   // Set system UI overlay style for dark immersive experience
   SystemChrome.setSystemUIOverlayStyle(

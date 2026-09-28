@@ -36,6 +36,7 @@ class TrackModel {
   });
 
   bool get isLocal => localFilePath != null && localFilePath!.isNotEmpty;
+  bool get isSaavn => source == 'saavn';
   bool get isSpotify => source == 'spotify';
   bool get isEpidemic => source == 'epidemicsound';
   bool get isSoundCloud => source == 'soundcloud';

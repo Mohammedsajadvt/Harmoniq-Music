@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/app_colors.dart';
+import '../core/services/update_service.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../widgets/animated_gradient_text.dart';
@@ -21,6 +22,21 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdate();
+    });
+  }
+
+  Future<void> _checkAppUpdate() async {
+    final update = await UpdateService().checkForUpdate();
+    if (update != null && mounted) {
+      UpdateService.showUpdateDialog(context, update);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

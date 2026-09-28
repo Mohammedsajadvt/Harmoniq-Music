@@ -25,11 +25,18 @@ class CreatorProfileSheet extends StatelessWidget {
         if (context.mounted) {
           Clipboard.setData(const ClipboardData(text: instagramUsername));
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: AppColors.surfaceElevated,
-              content: Text('📋 Instagram ID "$instagramUsername" copied to clipboard!'),
+            SnackBar(
+              backgroundColor: const Color(0xFF1E2330),
+              content: const Text(
+                '📋 Instagram ID "$instagramUsername" copied to clipboard!',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
               behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Colors.white12, width: 1),
+              ),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -253,11 +260,18 @@ class CreatorProfileSheet extends StatelessWidget {
                           onPressed: () {
                             Clipboard.setData(const ClipboardData(text: instagramUsername));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                backgroundColor: AppColors.surfaceElevated,
-                                content: Text('📋 Instagram ID "mohammed.sajad.vt" copied!'),
+                              SnackBar(
+                                backgroundColor: const Color(0xFF1E2330),
+                                content: const Text(
+                                  '📋 Instagram ID "mohammed.sajad.vt" copied!',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                ),
                                 behavior: SnackBarBehavior.floating,
-                                duration: Duration(seconds: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(color: Colors.white12, width: 1),
+                                ),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                           },
